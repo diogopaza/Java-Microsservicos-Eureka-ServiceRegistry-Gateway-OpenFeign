@@ -1,0 +1,191 @@
+Flyway para guardar o historico da base de dados, como os esquemas foram evoluindo, 
+ou precisar retornar a um momento anterior do banco de dados.
+Migrations histoico de tudo oque aconteceu na base de dados.
+Flyway cria uma pasta nos resources, db.migration dentro dessa pasta cria o arrquivo com o padrao == V{numero}__{nomeDoComando}.sql
+
+----------------------------
+@Configuration == posso colocar varios beans
+O modelmapper --- @bean foi anotado para o model mapper poder ser injetado com o @autowired
+
+--------------------------------------------------
+
+SERVICE DISCOVERY
+catalogo que conhece todos os microsservicos - esses se registram no service discovery --- 
+Eureka Server - Desenvolvido pela Netflix - Spring Cloud Netflix -- tem site oficial 
+
+O serviço de descoberta acontece basicamente em duas etapas. 
+Na primeira, é necessário ter um serviço ou mecanismo onde cada instância faça o seu registro.
+ Na segunda, é necessário que exista uma forma para que esse serviço seja localizado por outro serviço 
+ (que podemos chamar de “cliente” ou “consumidor”).
+ 
+ Para essa primeira etapa, que damos o nome de service registry, onde será gerado uma espécie de catálogo com todas
+ as URLs dos endereços dos serviços e suas instâncias, usaremos o Eureka Server, que faz parte do pacote Spring Cloud Netflix.
+
+O Eureka Server é um serviço REST que será responsável por “conhecer” todas as nossas instâncias de serviços. 
+Para isso, basta criar um novo projeto pelo site do Spring e selecionar a dependência Eureka Server, conforme imagem abaixo.
+
+Para que esse serviço conheça as nossas instâncias, 
+utiliza-se um padrão chamado self registration, 
+onde cada instância deverá se auto-registrar no servidor.
+
+
+--------------------------
+
+Serviços independentes, com base de dados separados 
+
+
+Microsservices na pratica --- 
+
+BUSINESS MICROSSERVICES
+
+USER MICROSERVICE --- EMAIL MICROSERVICE, base de dados por microsservice
+full flow asynchronous communication - comunicacao via comandos ---
+
+FUNCIONAMENTO DO FLUXO 
+CLIENT - envia post ----> USER MICROSERVICE - message ---> BROKER (rabbitmq) ---> EMAIL MICROSERVICE (ouve a mensagem, vai consumir) - 
+
+enviar um email de boas vindas e salvar o email. 
+
+FUNCIONAMENTO DO RABBITMQ
+
+USER MICROSERVICE é o PRODUCER (esta produzindo a mensagem) ---> RABBITMQ é formado de exhange e filas (queues) ---> EMAIL MICROSERVICE vai estar conectado 
+na fila e vai consumindo
+
+CLOUD AMQP ---- para configuraca e monitoramento do RABBITMQ ---
+
+TECNOLOGIAS 
+
+JAVA, MAVEN, ECOSSISTEMA SPRING, POSTGRESQL, RABBIT MQ, CLOUD AMQP, SMTP GMAIL.
+
+Record
+registros imutaveis para tansferencias de dados
+
+IMPLEMENTANDO BROKER 
+CloudAMQP - necessario realizar um cadastro --- https://customer.cloudamqp.com/instance
+Possui um plano Free - no dashboard cria uma nova instancia 
+seleciona a regiao 
+
+------------------
+no application.properties do servico email é defino o addrress onde esta a instancia no CloudAMQP. === spring.rabbitmq.addresses=
+
+-------------------------
+No microsservico Email sera criado um novo pacote chamado configs --- dentro uma classe RabbiMQConfig que sera anotada  com @Configuration
+
+definido nome da fila no application.properties para saber a qual exchange pertence == broker.queue.email.name=default.email
+
+Queue é uma fila de mensagens usada para comunicacao assincrona entre componmentes em um sistema distribuido.
+
+//CONSUMER - para consumir as mensagem que forem chegando
+
+//PRODUCER -- o MS-USER é o producer dof luxo de comunicacao.
+
+FLUXO DE COMUNICACAO ASSINCRONA NAO BLOQUEANTE
+
+1 - SALVAR USUARIO
+2 - PUBLICAR MENSAGEM
+3 - ESCUTAR (RECEBER) AS MENSAGENS
+4-  ENVIAR EMAIL
+5 - SALVAR EMAIL 
+
+--------------------
+----------------------------------
+
+Incluindo Gateway
+Ponto unico de entrada - para nao ficar mudando a porta o endereco para receber as requisicoes
+Spring Cloud Gateway
+
+Cria projeto Spring e configura o application. properties
+Precisa do Eureka Client e do Spring Cloud Gateway
+
+
+gateway é um ponto central ---- 
+
+Adicionando essas configuracoes:
+
+server.port = 8082
+
+#Configuracoes para se registrar no Eureka Service
+eureka.client.register-with-eureka=true 
+eureka.client.fetch-registry=true
+eureka.client.serviceUrl.defaultZone=http://localhost:8081/eureka
+
+#Configuracoes do Gateway
+spring.application.name=gateway
+#Gera o processo de descoberta
+spring.cloud.discovery.locator.enable=true
+#Nome das aplicacoes sejam em letras minusculas
+spring.cloud.gateway.discovery.locator.lowerCaseServiceId=true
+
+para fazer uma requisicao basta usar o endereceo do gateway e o nome do microsservico
+Exemplo onde 8082 é a porta do Gateway, todos os serviços passam a usar essa porta. 
+http://localhost:8082/pedidos-ms/pedidos
+
+----------------------------------------
+Balanceamento de carga
+Escalabilidade horizontal --- so quero escalonar um microsserviço 
+O gateway do spring faz o load balancing
+
+abrir uma segunda instacia via terminal o seguinte comando:
+
+& "D:\estudos-diogo\PDI---Conhecimentos-Avancados-em-Java\microsservicos-java\curso-1\pagamentos\mvnw.cmd" spring-boot:run -f "D:\estudos-diogo\PDI---Conhecimentos-Avancados-em-Java\microsservicos-java\curso-1\pagamentos\pom.xml"
+
+
+e foi criado um controller no microsservico pagamentos para retornar qual a porta esta rodndno a instancia.
+@GetMapping("porta-instancia")
+    public ResponseEntity<?> retornarPortaInstanciaPagamentoMS(
+            @Value("${local.server.port}") String porta) {
+        return ResponseEntity.ok().body("Instancia na porta: " + porta);
+    }
+	
+Forma muito simples para construir um servico de load balancing com Spring.
+
+-------------------------------------------
+Comunicacao entre microsservicos - Comunicacao Sincrona
+Serve para integracoes de api - backend para backend
+
+Usando Spring Feign --- solucao do Spring 
+Open Feign --- Spring Cloud OpenFeign --- busca fazer integracoes de backend para backend.
+
+*** PROX ATIVIDADE - COLOCAR PAGO NO PEDIDO ATRAVES DO MICROSSERVICO PAGAMENTO*****
+ADICIONAR AO POM:
+
+<dependency>
+			<groupId>org.springframework.cloud</groupId>
+			<artifactId>spring-cloud-starter-openfeign</artifactId>
+		</dependency>
+		
+---
+No PagamentosApplication == @EnableFeignClients
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
